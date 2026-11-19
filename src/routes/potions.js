@@ -1,8 +1,9 @@
-const { eq } = require("drizzle-orm");
+const { eq, is } = require("drizzle-orm");
 const express = require("express");
 
 const db = require("../db/db");
 const { potions } = require("../db/schema");
+const renderErrorHandler = require("../utilities/renderErrorHandler");
 const router = express.Router();
 
 router.get("/", async (req, res) => {
@@ -10,10 +11,7 @@ router.get("/", async (req, res) => {
     const allPotions = await db.select().from(potions);
     return res.status(200).json(allPotions);
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error!",
-    });
+    renderErrorHandler(res, err);
   }
 });
 
@@ -33,10 +31,43 @@ router.get("/:id", async (req, res) => {
 
     return res.status(200).json(entry);
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error!",
+    renderErrorHandler(res, err);
+  }
+});
+
+router.post("/", async (req, res) => {
+  try {
+    const { name, effect, isDangerous } = req.body;
+
+    if (!name) {
+      return res.status(404).json({
+        message: "The `name` field is required!",
+      });
+    }
+
+    if (!effect) {
+      return res.status(404).json({
+        message: "The `effect` field is required!",
+      });
+    }
+
+    if (isDangerous === undefined) {
+      return res.status(404).json({
+        message: "The `isDangerous` field is required!",
+      });
+    }
+
+    await db.insert(potions).values({
+      name: name,
+      effect: effect,
+      isDangerous: isDangerous,
     });
+
+    return res.status(201).json({
+      message: "New potion added successfully!",
+    });
+  } catch (err) {
+    return renderErrorHandler(res, err);
   }
 });
 
