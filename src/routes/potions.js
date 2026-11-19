@@ -71,4 +71,32 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  try {
+    const { name, effect, isDangerous } = req.body;
+    const [entry] = await db
+      .select()
+      .from(potions)
+      .where(eq(potions.id, +req.params.id));
+
+    if (!entry) {
+      return res.status(404).json({
+        success: false,
+        message: "Potion not found!",
+      });
+    }
+
+    await db
+      .update(potions)
+      .set({ name, effect, isDangerous })
+      .where(eq(potions.id, +req.params.id));
+
+    return res.status(200).json({
+      message: "Potion updated successfully!",
+    });
+  } catch (err) {
+    return renderErrorHandler(res, err);
+  }
+});
+
 module.exports = router;
