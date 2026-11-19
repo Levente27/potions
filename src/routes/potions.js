@@ -1,15 +1,33 @@
-const { eq, is } = require("drizzle-orm");
+const { eq, is, and, like } = require("drizzle-orm");
 const express = require("express");
 
 const db = require("../db/db");
 const { potions } = require("../db/schema");
 const renderErrorHandler = require("../utilities/renderErrorHandler");
+const { boolean } = require("drizzle-orm/gel-core");
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const allPotions = await db.select().from(potions);
-    return res.status(200).json(allPotions);
+    const { name, effect } = req.body;
+    let isDangerous = req.query.isDangerous;
+    if (!name && !effect && isDangerous === undefined) {
+      const allPotions = await db.select().from(potions);
+      return res.status(200).json(allPotions);
+    }
+
+    isDangerous = isDangerous === "true";
+
+    const queryPotions = await db
+      .select()
+      .from(potions)
+      .where(
+        and(like(potions.name, `%${name}%`)),
+        like(potions.effect, `%${effect}%`),
+        eq(potions.isDangerous, isDangerous),
+      );
+
+    return res.status(200).json(queryPotions);
   } catch (err) {
     renderErrorHandler(res, err);
   }
