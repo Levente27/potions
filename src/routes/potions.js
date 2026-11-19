@@ -99,4 +99,29 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const [exist] = await db
+      .select()
+      .from(potions)
+      .where(eq(potions.id, +req.params.id));
+
+    if (!exist) {
+      return res.status(404).json({
+        success: false,
+        message: "Potion not found!",
+      });
+    }
+
+    await db.delete(potions).where(eq(potions.id, +req.params.id));
+
+    return res.status(202).json({
+      success: true,
+      message: "Potion successfully deleted!",
+    });
+  } catch (err) {
+    renderErrorHandler(res, err);
+  }
+});
+
 module.exports = router;
